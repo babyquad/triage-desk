@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Triage Desk</title>
+<style>
+  :root {
+    --bg: #0f1216; --panel: #171b21; --line: #262c35; --ink: #e6e9ee;
+    --muted: #98a2b3; --accent: #6ea8fe; --ok: #4ade80; --warn: #fbbf24; --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex;
+    align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 17px; margin: 0; letter-spacing: .2px; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); }
+  main { max-width: 1000px; margin: 0 auto; padding: 24px; display: grid; gap: 18px; }
+  textarea { width: 100%; min-height: 120px; background: var(--panel); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: inherit; resize: vertical; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  button { background: var(--accent); color: #0b1220; border: 0; border-radius: 8px;
+    padding: 9px 16px; font-weight: 650; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); font-weight: 500; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+  .v { font-size: 16px; font-weight: 650; margin-top: 3px;
+       overflow-wrap: anywhere; min-width: 0; }
+  .bad { color: var(--bad); } .warn { color: var(--warn); } .ok { color: var(--ok); }
+  code { background: #11151b; padding: 1px 6px; border-radius: 5px; font-size: 13px; }
+  .cite { border-left: 2px solid var(--accent); padding-left: 10px; margin: 8px 0; font-size: 14px; }
+  pre { background: #11151b; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12.5px; }
+  .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Triage Desk</h1>
+  <span class="sub">Trust &amp; Safety / CX report triage, grounded in policy</span>
+  <span class="pill" id="mode">…</span>
+</header>
+
+<main>
+  <div class="card">
+    <div class="k" style="margin-bottom:8px">Report</div>
+    <textarea id="report" placeholder="Paste a user report…"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button id="go">Triage</button>
+      <button class="ghost" data-ex="Seller in the 9pm stream keeps telling people to Zelle him directly so he can skip the fees. He said it three times in chat.">off-platform</button>
+      <button class="ghost" data-ex="This listing is a fake. 1:1 mirror quality, seller admitted it in the DMs and it's $40 for something that retails for $900.">counterfeit</button>
+      <button class="ghost" data-ex="I bought a card on the 14th, paid immediately, and it still hasn't shipped. No tracking, seller won't answer.">not received</button>
+      <button class="ghost" data-ex="This streamer told a viewer he was going to find him and hurt him. It's on the VOD around 22 minutes in.">threat</button>
+    </div>
+  </div>
+
+  <div id="out"></div>
+
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="k">LLM-Ops</div>
+      <button class="ghost" id="refresh">Refresh</button>
+    </div>
+    <div id="ops" class="muted" style="margin-top:10px">—</div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+fetch("/healthz").then((r) => r.json()).then((h) => {
+  $("#mode").textContent = h.mode === "live" ? "live · " + h.model : "mock baseline";
+});
+
+document.querySelectorAll("[data-ex]").forEach((b) =>
+  b.addEventListener("click", () => { $("#report").value = b.dataset.ex; })
+);
+
+const sevClass = (s) => (s === "critical" || s === "high" ? "bad" : s === "medium" ? "warn" : "ok");
+
+async function run() {
+  const report = $("#report").value.trim();
+  if (!report) return;
+  $("#go").disabled = true;
+  $("#out").innerHTML = '<div class="card muted">Triaging…</div>';
+  try {
+    const res = await fetch("/api/triage", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ report }),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || "request_failed");
+    render(d);
+  } catch (e) {
+    $("#out").innerHTML = '<div class="card"><span class="bad">' + esc(e.message) +
+      '</span><div class="muted" style="margin-top:6px">Failing closed: route to a human.</div></div>';
+  } finally {
+    $("#go").disabled = false;
+    loadOps();
+  }
+}
+
+function render(d) {
+  const v = d.verdict;
+  const gate = d.guardrail
+    ? '<span class="warn">held: ' + esc(d.guardrail) + "</span>"
+    : d.auto_actionable ? '<span class="ok">auto-actionable</span>' : '<span class="muted">human</span>';
+
+  $("#out").innerHTML = `
+    <div class="card">
+      <div class="grid">
+        <div><div class="k">Category</div><div class="v">${esc(v.category)}</div></div>
+        <div><div class="k">Severity</div><div class="v ${sevClass(v.severity)}">${esc(v.severity)}</div></div>
+        <div><div class="k">Confidence</div><div class="v">${(v.confidence * 100).toFixed(0)}%</div></div>
+        <div><div class="k">Action</div><div class="v">${esc(v.recommended_action)}</div></div>
+        <div><div class="k">Gate</div><div class="v">${gate}</div></div>
+        <div><div class="k">Latency</div><div class="v">${d.latency_ms} ms</div></div>
+      </div>
+      <div style="margin-top:14px"><div class="k">Rationale</div><div style="margin-top:4px">${esc(v.rationale)}</div></div>
+      <div style="margin-top:14px"><div class="k">Cited policy</div>
+        ${(v.policy_ids || []).map((id) => '<div class="cite"><code>' + esc(id) + "</code> " +
+          esc((d.policies.find((p) => p.id === id) || {}).title || "") + "</div>").join("") ||
+          '<div class="cite warn">none cited — routed to a human</div>'}
+      </div>
+      <div style="margin-top:14px"><div class="k">Suggested reply</div>
+        <div style="margin-top:4px">${esc(v.suggested_reply)}</div></div>
+      <div style="margin-top:14px"><div class="k">Retrieved</div>
+        <div class="muted" style="margin-top:4px">${d.policies.map((p) =>
+          esc(p.id) + " (" + p.score + ")").join(" · ")}</div></div>
+    </div>`;
+}
+
+async function loadOps() {
+  const s = await (await fetch("/api/ops")).json();
+  $("#ops").innerHTML = "<pre>" + esc(JSON.stringify(s, null, 2)) + "</pre>";
+}
+
+$("#go").addEventListener("click", run);
+$("#refresh").addEventListener("click", loadOps);
+$("#report").addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
+});
+
+// Deep link: /?report=... prefills and triages on load, so a specific case
+// can be shared or demoed without retyping it.
+const preset = new URLSearchParams(location.search).get("report");
+if (preset) { $("#report").value = preset; run(); } else { loadOps(); }
+</script>
+</body>
+</html>

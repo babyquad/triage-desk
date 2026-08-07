@@ -1,0 +1,72 @@
+[
+  {
+    "id": "E-01",
+    "report": "Seller in the 9pm stream keeps telling people to Zelle him directly so he can skip the fees. He said it three times in chat.",
+    "expect": { "category": "off_platform_transaction", "policy_id": "POL-003", "must_escalate": false }
+  },
+  {
+    "id": "E-02",
+    "report": "This listing is a fake. 1:1 mirror quality, the seller admitted it in DMs, and it's $40 for a bag that retails for $900.",
+    "expect": { "category": "counterfeit", "policy_id": "POL-002", "must_escalate": false }
+  },
+  {
+    "id": "E-03",
+    "report": "Guy is selling ammunition on stream. He has boxes of 9mm behind him and is taking offers in chat.",
+    "expect": { "category": "prohibited_item", "policy_id": "POL-001", "must_escalate": false }
+  },
+  {
+    "id": "E-04",
+    "report": "I bought a card on the 14th, paid immediately, and it still hasn't shipped. No tracking and the seller won't answer messages.",
+    "expect": { "category": "no_violation", "policy_id": "POL-007", "must_escalate": false }
+  },
+  {
+    "id": "E-05",
+    "report": "This streamer told a viewer he was going to find him at his house and hurt him. It's on the VOD around 22 minutes in.",
+    "expect": { "category": "harassment", "policy_id": "POL-006", "must_escalate": true }
+  },
+  {
+    "id": "E-06",
+    "report": "Pretty sure the kid streaming is about 15. He mentioned his sophomore year and his mom yelled at him to do homework mid-stream.",
+    "expect": { "category": "harassment", "policy_id": "POL-010", "must_escalate": true }
+  },
+  {
+    "id": "E-07",
+    "report": "Three orders on my account I never made, all shipped to an address in another state. I think someone got into my account after the password reset email.",
+    "expect": { "category": "payment_fraud", "policy_id": "POL-004", "must_escalate": true }
+  },
+  {
+    "id": "E-08",
+    "report": "The same account bids on every single one of this seller's auctions and never bids anywhere else. Prices always jump right at the end and then the winner never pays.",
+    "expect": { "category": "shill_bidding", "policy_id": "POL-005", "must_escalate": false }
+  },
+  {
+    "id": "E-09",
+    "report": "Bot accounts are posting the same promo link over and over in every stream I watch tonight.",
+    "expect": { "category": "spam", "policy_id": "POL-008", "must_escalate": false }
+  },
+  {
+    "id": "E-10",
+    "report": "Seller is running mystery boxes with no odds listed. You pay $75 and he says you might get a $1000 card. Feels like gambling.",
+    "expect": { "category": "prohibited_item", "policy_id": "POL-009", "must_escalate": false }
+  },
+  {
+    "id": "E-11",
+    "report": "He asked me to send payment as a gift card code over DM instead of checking out normally.",
+    "expect": { "category": "off_platform_transaction", "policy_id": "POL-003", "must_escalate": false }
+  },
+  {
+    "id": "E-12",
+    "report": "Item arrived two days later than the estimate but it's fine, it's here. Just wanted someone to know.",
+    "expect": { "category": "no_violation", "policy_id": "POL-007", "must_escalate": false }
+  },
+  {
+    "id": "E-13",
+    "report": "Seller is selling vape pens and nicotine pouches on a stream labelled as collectibles.",
+    "expect": { "category": "prohibited_item", "policy_id": "POL-001", "must_escalate": false }
+  },
+  {
+    "id": "E-14",
+    "report": "The card is listed as a PSA 10 but there's no slab in any of the photos and he won't give a cert number.",
+    "expect": { "category": "counterfeit", "policy_id": "POL-002", "must_escalate": false }
+  }
+]
