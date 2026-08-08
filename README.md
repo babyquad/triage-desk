@@ -84,9 +84,10 @@ half: the web UI and an agent call the same pipeline.
 
 ## Three bugs found while building this
 
-Both surfaced on the first eval run, before any of this had been near a real
-report. They're written up rather than quietly fixed because they're the
-argument for having the harness at all.
+The first two surfaced on the first eval run, before any of this had been near
+a real report. The third never showed up in a metric at all — every number was
+green — and was only visible in the rendered output. They're written up rather
+than quietly fixed because they're the argument for having the harness at all.
 
 **1. A retrieval miss from missing stemming.** A report about "vape pens"
 never matched the policy line about "vaping products" — different tokens, zero
